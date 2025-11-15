@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Request Access</title>
+</head>
+<body>
+    <h1>Scraping Justification</h1>
+    <form id="accessForm">
+        <textarea name="justification" id="justification" rows="5" cols="50" placeholder="Enter your justification..."></textarea><br><br>
+        <button type="submit">Submit</button>
+    </form>
+
+    <h3 id="result"></h3>
+
+    <script>
+        const form = document.getElementById("accessForm");
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const justification = document.getElementById("justification").value;
+
+            const response = await fetch("/request-access", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ justification })
+            });
+
+            const data = await response.json();
+            document.getElementById("result").innerText = 
+                `Classification: ${data.classification}, Confidence: ${data.confidence}`;
+        });
+    </script>
+</body>
+</html>

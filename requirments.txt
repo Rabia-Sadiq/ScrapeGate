@@ -1,0 +1,19 @@
+<<<<<<< HEAD
+flask
+Flask>=2.2
+SQLAlchemy>=1.4
+Flask-SQLAlchemy>=3.0
+python-dotenv
+Flask-Migrate   
+torch
+transformers
+=======
+flask
+Flask>=2.2
+SQLAlchemy>=1.4
+Flask-SQLAlchemy>=3.0
+python-dotenv
+Flask-Migrate   
+torch
+transformers
+>>>>>>> 7f79ef2b (phase 2)
