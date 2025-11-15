@@ -1,13 +1,15 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, redirect
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta
-from nlp_model import classify_text   # ✅ your trained NLP model
-from decorators import token_required
-from utils import generate_token
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 import json
 from pathlib import Path
+
+from models import db, RequestLog, AccessRequest, BlockedIP  # ✅ your separate models file
+from nlp_model import classify_text  # ✅ your trained NLP model
+from decorators import token_required
+from utils import generate_token
 
 # -----------------------------
 # Config
@@ -25,7 +27,7 @@ class Config:
 # -----------------------------
 app = Flask(__name__)
 app.config.from_object(Config)
-db = SQLAlchemy(app)
+db.init_app(app)
 
 # -----------------------------
 # Rate Limiter
@@ -37,33 +39,50 @@ limiter = Limiter(
 )
 
 # -----------------------------
-# Database Models
+# Phase 4 – Suspicious User Detection
 # -----------------------------
-class RequestLog(db.Model):
-    __tablename__ = "request_logs"
-    id = db.Column(db.Integer, primary_key=True)
-    ip = db.Column(db.String(45))
-    path = db.Column(db.String(255))
-    method = db.Column(db.String(10))
-    headers = db.Column(db.Text)
-    user_agent = db.Column(db.String(255))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+blocked_ips = set()
+REQUEST_THRESHOLD = 10  # max requests per minute
 
-class AccessRequest(db.Model):
-    __tablename__ = "access_requests"
-    id = db.Column(db.Integer, primary_key=True)
-    ip = db.Column(db.String(45))
-    justification = db.Column(db.Text)
-    classification = db.Column(db.String(50))
-    confidence = db.Column(db.Float)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+@app.before_request
+def detect_suspicious_users():
+    ip = request.remote_addr or "unknown"
+    user_agent = request.headers.get("User-Agent", "").lower()
 
-# Create tables if they don’t exist
-with app.app_context():
-    db.create_all()
+    # Skip request_access route
+    if request.endpoint == "request_access":
+        return
+
+    # Redirect blocked IPs
+    if ip in blocked_ips:
+        return redirect("/request-access")
+
+    # Track requests in-memory per IP
+    if not hasattr(app, "request_log_cache"):
+        app.request_log_cache = {}
+    app.request_log_cache.setdefault(ip, [])
+    now = datetime.utcnow()
+    app.request_log_cache[ip].append(now)
+
+    # Keep timestamps within last 1 min
+    app.request_log_cache[ip] = [
+        t for t in app.request_log_cache[ip] if now - t < timedelta(minutes=1)
+    ]
+
+    # Rule 1: Excessive requests → block
+    if len(app.request_log_cache[ip]) > REQUEST_THRESHOLD:
+        blocked_ips.add(ip)
+        print(f"⚠️ Blocked {ip} for excessive requests")
+        return redirect("/request-access")
+
+    # Rule 2: Suspicious User-Agent → block
+    if "bot" in user_agent or "curl" in user_agent:
+        blocked_ips.add(ip)
+        print(f"⚠️ Blocked {ip} due to suspicious User-Agent: {user_agent}")
+        return redirect("/request-access")
 
 # -----------------------------
-# Helper Function
+# Helper Functions
 # -----------------------------
 def get_client_ip():
     """Extract real client IP (handles proxies)"""
@@ -73,7 +92,7 @@ def get_client_ip():
     return request.remote_addr or "unknown"
 
 # -----------------------------
-# Home Route
+# Routes
 # -----------------------------
 @app.route("/")
 def home():
@@ -82,9 +101,6 @@ def home():
         <p>Use <code>/detect</code> to log requests, or <code>/request-access</code> to test NLP classification.</p>
     """
 
-# -----------------------------
-# Phase 1 — Request Detection
-# -----------------------------
 @app.route("/detect", methods=["GET", "POST"])
 def detect():
     ip = get_client_ip()
@@ -101,7 +117,9 @@ def detect():
     # Count number of recent requests from this IP
     window_minutes = int(request.args.get("window", 1))
     window_start = datetime.utcnow() - timedelta(minutes=window_minutes)
-    count = RequestLog.query.filter(RequestLog.ip == ip, RequestLog.created_at >= window_start).count()
+    count = RequestLog.query.filter(
+        RequestLog.ip == ip, RequestLog.created_at >= window_start
+    ).count()
 
     return jsonify({
         "message": "Request logged ✅",
@@ -110,18 +128,16 @@ def detect():
         "timestamp": log.created_at.isoformat()
     }), 201
 
-# -----------------------------
-# Phase 2 + 3 — NLP Classification & Token Generation
-# -----------------------------
 @app.route("/request-access", methods=["GET", "POST"])
 def request_access():
     if request.method == "GET":
         return render_template("request_access.html")
 
+    # Handle JSON or form data
     if request.is_json:
         data = request.get_json(force=True)
         justification = data.get("justification", "").strip()
-        user_id = data.get("user_id", get_client_ip())  # default to IP if not provided
+        user_id = data.get("user_id", get_client_ip())
     else:
         justification = request.form.get("justification", "").strip()
         user_id = get_client_ip()
@@ -129,7 +145,7 @@ def request_access():
     if not justification:
         return jsonify({"error": "Missing 'justification' field"}), 400
 
-    # Run trained NLP model
+    # Run NLP model
     classification, confidence = classify_text(justification)
 
     # Save to DB
@@ -142,8 +158,11 @@ def request_access():
     db.session.add(new_entry)
     db.session.commit()
 
-    # Generate JWT token for valid requests
-    token = generate_token(user_id) if classification.lower() == "valid" else None
+    # Unblock IP if valid
+    token = None
+    if classification.lower() == "valid":
+        blocked_ips.discard(get_client_ip())
+        token = generate_token(user_id)
 
     response = {
         "ip": get_client_ip(),
@@ -164,14 +183,10 @@ def request_access():
             token=token
         )
 
-# -----------------------------
-# Phase 3 — Protected Route
-# -----------------------------
 @app.route("/api/data", methods=["GET"])
 @token_required
 @limiter.limit("5 per hour")  # optional per-route limit
 def get_data(user_id):
-    # user_id comes from token
     return jsonify({
         "message": f"Hello User {user_id}, here is your protected data.",
         "data": ["item1", "item2", "item3"]
@@ -181,5 +196,7 @@ def get_data(user_id):
 # Run App
 # -----------------------------
 if __name__ == "__main__":
+    with app.app_context():
+        db.create_all()  # ensure tables exist
     print("🚀 Server starting... Loading NLP model via nlp_model.py ...")
     app.run(host="0.0.0.0", port=5000, debug=True)
