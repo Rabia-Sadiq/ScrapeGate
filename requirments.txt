@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 flask
 Flask>=2.2
 SQLAlchemy>=1.4
@@ -16,4 +15,5 @@ python-dotenv
 Flask-Migrate   
 torch
 transformers
->>>>>>> 7f79ef2b (phase 2)
+pyjwt
+flask-limiter

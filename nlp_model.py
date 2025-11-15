@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 import pickle
 from pathlib import Path
 
@@ -28,7 +28,7 @@ def classify_text(text):
         confidence = 1.0  # fallback if model has no predict_proba
 
     return prediction, confidence
-=======
+
 import pickle
 from pathlib import Path
 
@@ -58,4 +58,4 @@ def classify_text(text):
         confidence = 1.0  # fallback if model has no predict_proba
 
     return prediction, confidence
->>>>>>> 7f79ef2b (phase 2)
+
