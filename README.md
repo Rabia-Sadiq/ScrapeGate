@@ -1,5 +1,5 @@
 
-# 📌 **README.md — ScrapeGate: NLP-Driven Controlled Scraping Access**
+# ScrapeGate: NLP-Driven Controlled Scraping Access**
 
 ## 🚀 Overview
 
