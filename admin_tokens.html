@@ -1,0 +1,43 @@
+{% extends "admin_base.html" %}
+{% block content %}
+
+<h2>API Tokens</h2>
+
+<table class="table table-bordered table-striped">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Token</th>
+            <th>IP</th>
+            <th>Created</th>
+            <th>Expires</th>
+            <th>Status</th>
+            <th>Revoke</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for t in tokens %}
+        <tr>
+            <td>{{ t.id }}</td>
+            <td style="max-width:300px;">{{ t.token[:50] }} ...</td>
+            <td>{{ t.user_ip }}</td>
+            <td>{{ t.created_at }}</td>
+            <td>{{ t.expires_at }}</td>
+            <td>
+                {% if t.active %}
+                    <span class="badge bg-success">Active</span>
+                {% else %}
+                    <span class="badge bg-danger">Revoked</span>
+                {% endif %}
+            </td>
+            <td>
+                {% if t.active %}
+                    <a href="/admin/revoke/{{ t.id }}" class="btn btn-danger btn-sm">Revoke</a>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}

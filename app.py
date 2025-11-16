@@ -10,7 +10,7 @@ from models import db, RequestLog, AccessRequest, BlockedIP  # ✅ your separate
 from nlp_model import classify_text  # ✅ your trained NLP model
 from decorators import token_required
 from utils import generate_token
-
+from admin import admin_bp
 # -----------------------------
 # Config
 # -----------------------------
@@ -28,7 +28,7 @@ class Config:
 app = Flask(__name__)
 app.config.from_object(Config)
 db.init_app(app)
-
+app.register_blueprint(admin_bp, url_prefix="/")
 # -----------------------------
 # Rate Limiter
 # -----------------------------
@@ -191,6 +191,20 @@ def get_data(user_id):
         "message": f"Hello User {user_id}, here is your protected data.",
         "data": ["item1", "item2", "item3"]
     })
+@app.route('/api/admin/traffic-data')
+def traffic_data():
+    last_24h = datetime.utcnow() - timedelta(hours=24)
+    logs = RequestLog.query.filter(RequestLog.timestamp >= last_24h).all()
+
+    hourly = {}
+    for log in logs:
+        hour = log.timestamp.strftime("%H:00")
+        hourly[hour] = hourly.get(hour, 0) + 1
+
+    labels = list(hourly.keys())
+    values = list(hourly.values())
+
+    return jsonify({"labels": labels, "values": values})
 
 # -----------------------------
 # Run App

@@ -1,0 +1,29 @@
+{% extends "admin_base.html" %}
+{% block content %}
+
+<h2>Request Logs</h2>
+
+<table class="table table-bordered table-striped">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>IP</th>
+            <th>Route</th>
+            <th>Headers</th>
+            <th>Timestamp</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for log in logs %}
+        <tr>
+            <td>{{ log.id }}</td>
+            <td>{{ log.ip }}</td>
+            <td>{{ log.route }}</td>
+            <td><pre style="white-space: pre-wrap;">{{ log.headers }}</pre></td>
+            <td>{{ log.timestamp }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}

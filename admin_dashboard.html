@@ -1,0 +1,50 @@
+{% extends "admin_base.html" %}
+{% block content %}
+
+<h2 class="mb-3">Admin Dashboard</h2>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card shadow">
+            <div class="card-body">
+                <h4>Total Tokens</h4>
+                <p>{{ Token.query.count() }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card shadow">
+            <div class="card-body">
+                <h4>Total Logs</h4>
+                <p>{{ RequestLog.query.count() }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<br><br>
+<h3>Traffic Chart</h3>
+<canvas id="trafficChart"></canvas>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const ctx = document.getElementById('trafficChart');
+
+fetch('/api/admin/traffic-data')
+  .then(r=>r.json())
+  .then(data=>{
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: data.labels,
+        datasets: [{
+          label: 'Requests per hour',
+          data: data.values
+        }]
+      }
+    });
+  });
+</script>
+
+{% endblock %}

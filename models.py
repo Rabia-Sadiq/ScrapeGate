@@ -37,3 +37,10 @@ class BlockedIP(db.Model):
     ip = db.Column(db.String(45), primary_key=True)
     reason = db.Column(db.String(255))
     blocked_at = db.Column(db.DateTime, default=datetime.utcnow)
+class Token(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    token = db.Column(db.String(500), unique=True, nullable=False)
+    user_ip = db.Column(db.String(50))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    expires_at = db.Column(db.DateTime)
+    active = db.Column(db.Boolean, default=True)
