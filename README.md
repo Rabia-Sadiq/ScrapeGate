@@ -1,4 +1,3 @@
----
 
 # 📌 **README.md — ScrapeGate: NLP-Driven Controlled Scraping Access**
 
@@ -7,8 +6,6 @@
 **ScrapeGate** is an **Information Security semester project** designed to control and secure web-scraping access using NLP-based request classification, rate limiting, token-based authorization, and logging.
 
 The system prevents **unauthorized, abusive, or malicious scraping**, while still allowing legitimate users to request access.
-
----
 
 ## 🧠 Key Features
 
