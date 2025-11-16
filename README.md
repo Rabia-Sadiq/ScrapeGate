@@ -156,6 +156,3 @@ Requires token:
 ```
 Authorization: Bearer <token>
 ```
-
-iagrams (Architecture / Flowchart / ERD)*
-Just tell me **“create wiki”**, **“create slides”**, or **“make the diagram”**!
