@@ -7,17 +7,16 @@ load_dotenv()
 # Secret key for JWT (keep it secret!)
 SECRET_KEY = os.getenv("SECRET_KEY")
 
-def generate_token(user_id, expires_in=24):
-    """
-    Generate a JWT token valid for `expires_in` hours
-    """
+def generate_token(user_id, allowed_endpoints=None, max_requests=50, expires_minutes=60):
     payload = {
-        "user_id": str(user_id),
-        "exp": datetime.utcnow() + timedelta(hours=expires_in)
+        "user_id": user_id,
+        "allowed_endpoints": allowed_endpoints or ["/api/data"],  # default endpoint
+        "max_requests": max_requests,
+        "exp": datetime.utcnow() + timedelta(minutes=expires_minutes)
     }
     token = jwt.encode(payload, SECRET_KEY, algorithm="HS256")
     return token
-
+    
 def decode_token(token):
     """
     Decode JWT token and return payload.

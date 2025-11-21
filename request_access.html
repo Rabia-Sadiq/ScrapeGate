@@ -2,35 +2,54 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Request Access</title>
+    <title>Request Access - ScrapGate</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        h1 { color: #333; }
+        form { margin-bottom: 20px; }
+        input, textarea { width: 100%; padding: 8px; margin: 5px 0; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th { background-color: #f4f4f4; }
+        .token-box { margin-top: 15px; padding: 10px; background-color: #f9f9f9; border: 1px solid #ddd; word-break: break-all; }
+        button { padding: 8px 15px; cursor: pointer; }
+    </style>
 </head>
 <body>
-    <h1>Scraping Justification</h1>
-    <form id="accessForm">
-        <textarea name="justification" id="justification" rows="5" cols="50" placeholder="Enter your justification..."></textarea><br><br>
+    <h1>Request Access</h1>
+
+    <form method="POST">
+        <label for="justification">Why do you need access?</label>
+        <textarea id="justification" name="justification" rows="4" required></textarea>
         <button type="submit">Submit</button>
     </form>
 
-    <h3 id="result"></h3>
+    {% if result %}
+        <h2>Result</h2>
+        <p>{{ result }}</p>
+    {% endif %}
 
-    <script>
-        const form = document.getElementById("accessForm");
-        form.addEventListener("submit", async (e) => {
-            e.preventDefault();
-            const justification = document.getElementById("justification").value;
 
-            const response = await fetch("/request-access", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({ justification })
-            });
+    {% if endpoints %}
+        <h3>Allowed Endpoints</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Path</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ep in endpoints %}
+                <tr>
+                    <td>{{ ep.path }}</td>
+                    <td>{{ ep.description }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
 
-            const data = await response.json();
-            document.getElementById("result").innerText = 
-                `Classification: ${data.classification}, Confidence: ${data.confidence}`;
-        });
-    </script>
+    
 </body>
 </html>

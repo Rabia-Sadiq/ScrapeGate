@@ -44,3 +44,10 @@ class Token(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     expires_at = db.Column(db.DateTime)
     active = db.Column(db.Boolean, default=True)
+# models.py
+class APIEndpoint(db.Model):
+    __tablename__ = "api_endpoints"
+    id = db.Column(db.Integer, primary_key=True)
+    path = db.Column(db.String(100), unique=True, nullable=False)  # endpoint path
+    description = db.Column(db.String(255), nullable=True)         # short description
+    requires_validation = db.Column(db.Boolean, default=True)     # if access requires approval
